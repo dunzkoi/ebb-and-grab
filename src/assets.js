@@ -1,0 +1,114 @@
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as skinClone } from 'three/addons/utils/SkeletonUtils.js';
+
+const MANIFEST = {
+  player: 'player.gltf',
+  shark: 'mob_shark.gltf',
+  deepone: 'mob_deepone.gltf',
+  wave: 'mob_wave.gltf',
+
+  coral: 'coral.gltf',
+  starfishA: 'starfish_blue.gltf',
+  starfishB: 'starfish_orange.gltf',
+  conch: 'conch.gltf',
+  conchB: 'conch_purple.gltf',
+  boulderM: 'boulder_med.gltf',
+  boulderL: 'boulder_large.gltf',
+  wreckCannon: 'wreck_cannon.gltf',
+  wreckMast: 'wreck_mast.gltf',
+  wreckHull: 'wreck_hull.gltf',
+  wreckChest: 'wreck_chest.gltf',
+  megalodon: 'megalodon.gltf',
+  fishbone: 'fishbone.gltf',
+
+  shipwright: 'b_shipwright.gltf',
+  well: 'b_well.gltf',
+  bank: 'b_bank.gltf',
+  palm: 'palm.gltf',
+
+  chest: 'chest_rare.gltf',
+  chestB: 'chest_epic.gltf',
+  coin: 'coin.gltf',
+  goldbag: 'goldbag.gltf',
+  mysterybag: 'mysterybag.gltf',
+  barrel: 'barrel.gltf',
+  crate: 'crate_brown.gltf',
+  crateB: 'crate_red.gltf',
+  crateC: 'crate_blue.gltf',
+};
+
+export const models = {};
+export const clips = {};
+
+/** Voxel props are authored at ~15 units per tile; normalise them here. */
+const PROP_SCALE = 1 / 15;
+
+function prep(gltf, key) {
+  const root = gltf.scene;
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    o.castShadow = true;
+    o.receiveShadow = false;
+    o.frustumCulled = true;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    for (const m of mats) {
+      if (!m) continue;
+      // Voxel palette textures must stay crisp, never blurred.
+      for (const slot of ['map', 'emissiveMap']) {
+        if (m[slot]) {
+          m[slot].magFilter = THREE.NearestFilter;
+          m[slot].minFilter = THREE.LinearMipmapLinearFilter;
+          m[slot].anisotropy = 4;
+        }
+      }
+      m.metalness = 0;
+      m.roughness = 1;
+      // bare voxel rock reads as dropped paper on tan sand, damp it down
+      if (key.startsWith('boulder')) m.color.setHex(0x8d8a72);
+      if (m.emissive && m.emissiveMap) m.emissiveIntensity = 0.35;
+    }
+  });
+  models[key] = root;
+  clips[key] = gltf.animations || [];
+}
+
+export async function loadAll(onProgress) {
+  const loader = new GLTFLoader().setPath('./assets/models/');
+  const entries = Object.entries(MANIFEST);
+  let done = 0;
+  await Promise.all(entries.map(async ([key, file]) => {
+    const gltf = await loader.loadAsync(file);
+    prep(gltf, key);
+    done++;
+    onProgress?.(done / entries.length, key);
+  }));
+}
+
+/** Static prop instance, normalised to tile scale and grounded at y=0. */
+export function prop(key, { scale = 1, grounded = true } = {}) {
+  const src = models[key];
+  if (!src) throw new Error('missing model ' + key);
+  const g = src.clone(true);
+  g.scale.setScalar(PROP_SCALE * scale);
+  if (grounded) {
+    const box = new THREE.Box3().setFromObject(g);
+    g.position.y = -box.min.y;
+  }
+  return g;
+}
+
+/** Skinned instance sharing geometry but with its own skeleton. */
+export function rig(key) {
+  const g = skinClone(models[key]);
+  const mixer = new THREE.AnimationMixer(g);
+  const actions = {};
+  for (const c of clips[key]) actions[c.name] = mixer.clipAction(c);
+  return { object: g, mixer, actions, clips: clips[key] };
+}
+
+/** Bounding size of a prop at tile scale, useful for placement. */
+export function propSize(key, scale = 1) {
+  const box = new THREE.Box3().setFromObject(models[key]);
+  return box.getSize(new THREE.Vector3()).multiplyScalar(PROP_SCALE * scale);
+}
