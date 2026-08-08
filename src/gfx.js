@@ -40,6 +40,7 @@ scene.add(bounce);
 /* ---------- camera rig: fixed quarter view, smooth follow ---------- */
 
 const CAM_OFF = new THREE.Vector3(0, 10.3, 11.4);
+const SUN_OFF = new THREE.Vector3(34, 52, 26);
 const camTarget = new THREE.Vector3();
 const camWant = new THREE.Vector3();
 let shakeAmp = 0, shakeT = 0, zoom = 1, zoomWant = 1;
@@ -65,7 +66,7 @@ export function updateCamera(focus, dt, lookAhead) {
   camera.lookAt(camTarget.x, camTarget.y + 1.4, camTarget.z);
 
   sun.target.position.copy(camTarget);
-  sun.position.copy(camTarget).add(new THREE.Vector3(34, 52, 26));
+  sun.position.copy(camTarget).add(SUN_OFF);
 }
 
 export function resize() {

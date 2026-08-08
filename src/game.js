@@ -15,6 +15,8 @@ import { sfx, setMusicIntensity, setMusicPhase, updateMusic } from './audio.js';
 import * as ui from './ui.js';
 import { input, pollInput, endInputFrame } from './input.js';
 
+const _look = new THREE.Vector3();   // 프레임마다 재사용
+
 const CREEP = 9;   // how far the water sneaks in during the tail of the ebb
 const SETTLE = 2.6;
 
@@ -338,7 +340,7 @@ export class Game {
     }
 
     /* ---- camera & hud ---- */
-    const look = new THREE.Vector3(p.vel.x, 0, p.vel.z).multiplyScalar(0.12);
+    const look = _look.set(p.vel.x, 0, p.vel.z).multiplyScalar(0.12);
     updateCamera(p.pos, dt, look);
     updateFx(dt);
     updateMusic(dt);

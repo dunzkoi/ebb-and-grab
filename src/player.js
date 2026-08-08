@@ -7,6 +7,10 @@ import { burst, ripple, popup } from './fx.js';
 import { sfx } from './audio.js';
 import { addOutline } from './outline.js';
 
+// 프레임마다 새로 만들지 않기 위한 재사용 벡터
+const _wish = new THREE.Vector3();
+const _zero = new THREE.Vector3();
+
 const A = {
   idle: '01_Idle_1',
   walk: '04_Walk',
@@ -141,7 +145,7 @@ export class Player {
     const stunned = this.stun > 0;
     if (stunned) this.stun -= dt;
 
-    let wish = new THREE.Vector3(input.x, 0, input.z);
+    const wish = _wish.set(input.x, 0, input.z);
     const moving = wish.lengthSq() > 0.001 && !stunned;
 
     let speed = PLAYER.speed * this.speedMul * loadPenalty(this.weight);
@@ -151,7 +155,7 @@ export class Player {
       this.dashT -= dt;
       this.vel.copy(this.dashDir).multiplyScalar(PLAYER.dashSpeed * (0.5 + this.dashT / PLAYER.dashTime * 0.5));
     } else {
-      const target = moving ? wish.multiplyScalar(speed) : new THREE.Vector3();
+      const target = moving ? wish.multiplyScalar(speed) : _zero.set(0, 0, 0);
       const k = Math.min(1, dt * (moving ? PLAYER.accel / speed : 14));
       this.vel.lerp(target, k);
     }
