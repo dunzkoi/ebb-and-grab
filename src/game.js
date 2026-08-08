@@ -9,6 +9,7 @@ import {
   R_VILLAGE, R_SHORE, R_MAX, TIDE_OUT, TIDE_IN, terrainHeight,
   LOOT, UPGRADES, REPAIR_COST, MAX_TIDES, PLAYER, lootPlan, tidePlan,
 } from './config.js';
+import { bakeInstances } from './instancing.js';
 import { burst, ripple, popup, updateFx } from './fx.js';
 import { sfx, setMusicIntensity, setMusicPhase, updateMusic } from './audio.js';
 import * as ui from './ui.js';
@@ -24,8 +25,7 @@ export class Game {
 
     buildTerrain();
     this.water = buildWater();
-    buildVillage();
-    buildSeabed();
+    bakeInstances([...buildVillage(), ...buildSeabed()]);
 
     this.player = new Player();
     this.loot = [];

@@ -79,3 +79,5 @@ window.addEventListener('resize', resize);
 resize();
 
 window.__gfx = { renderer, scene, camera };
+
+window.__gfx = { renderer, scene, camera };
