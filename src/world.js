@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { scene } from './gfx.js';
+import { scene, bindWater } from './gfx.js';
 import { prop } from './assets.js';
 import {
   R_VILLAGE, R_SHORE, R_MAX, R_OCEAN, MAX_DEPTH, LAND_Y, terrainHeight,
@@ -153,15 +153,23 @@ const waterVert = /* glsl */`
 uniform float uTime;
 varying vec3 vWorld;
 varying float vWave;
+varying vec3 vNrm;
 void main(){
   vec4 wp = modelMatrix * vec4(position,1.0);
   float d = length(wp.xz);
-  float a = sin(wp.x*0.16 + uTime*1.05) * 0.30
-          + sin(wp.z*0.21 - uTime*0.86) * 0.24
-          + sin((wp.x+wp.z)*0.09 + uTime*1.6) * 0.16;
+  float p1 = wp.x*0.16 + uTime*1.05;
+  float p2 = wp.z*0.21 - uTime*0.86;
+  float p3 = (wp.x+wp.z)*0.09 + uTime*1.6;
+  float a = sin(p1)*0.30 + sin(p2)*0.24 + sin(p3)*0.16;
   // calmer close to the middle of the bay so the shoreline reads cleanly
-  a *= smoothstep(6.0, 34.0, d) * 0.75 + 0.25;
+  float calm = smoothstep(6.0, 34.0, d) * 0.75 + 0.25;
+  a *= calm;
   wp.y += a;
+  // 파형을 해석적으로 미분해서 진짜 법선을 만든다. 여기서 나온 법선으로
+  // 프래그먼트에서 태양 스페큘러를 찍는다. 마루에만 햇빛이 튀고 블룸이 그걸 문다.
+  float dx = (0.30*0.16*cos(p1) + 0.16*0.09*cos(p3)) * calm;
+  float dz = (-0.24*0.21*cos(p2) + 0.16*0.09*cos(p3)) * calm;
+  vNrm = normalize(vec3(-dx, 1.0, -dz));
   vWave = a;
   vWorld = wp.xyz;
   gl_Position = projectionMatrix * viewMatrix * wp;
@@ -170,10 +178,11 @@ void main(){
 const waterFrag = /* glsl */`
 precision highp float;
 uniform float uTime, uTideR, uWaterY;
-uniform vec3 uShallow, uDeep, uFoam, uFog;
+uniform vec3 uShallow, uDeep, uFoam, uFog, uSunDir, uSunCol;
 uniform float uFogNear, uFogFar;
 varying vec3 vWorld;
 varying float vWave;
+varying vec3 vNrm;
 
 const float R_VILLAGE = ${R_VILLAGE.toFixed(1)};
 const float R_MAX = ${R_MAX.toFixed(1)};
@@ -203,9 +212,27 @@ void main(){
   float dn = clamp(max(depth / 6.0, (r - uTideR) / 22.0), 0.0, 1.0);
   vec3 col = mix(uShallow, uDeep, pow(dn, 0.7));
 
-  // sun glitter
-  float gl = pow(max(vWave,0.0), 2.0);
-  col += vec3(0.16,0.21,0.26) * gl;
+  // 잔물결은 지오메트리를 안 흔들고 법선만 흔든다. 정점 밀도로는 못 담는 주파수고,
+  // 스페큘러가 반짝이려면 법선이 이 정도는 기울어줘야 한다.
+  vec2 q = vWorld.xz;
+  vec3 N = normalize(vNrm + vec3(
+    sin(q.x*1.9 + uTime*2.6)*0.17 + sin(q.y*2.7 - uTime*1.9)*0.11,
+    0.0,
+    cos(q.y*1.7 - uTime*2.2)*0.17 + cos(q.x*2.3 + uTime*2.9)*0.11));
+  vec3 V = normalize(cameraPosition - vWorld);
+
+  // 하늘 반사. 깊은 물에서만 먹인다. 여을에까지 걸면 물 전체가 뿐여진다.
+  float fres = pow(1.0 - max(dot(N,V),0.0), 4.0);
+  col = mix(col, uFog, fres*0.3*dn);
+
+  // 태양 스페큘러. 파도 마루에서만 터지고 블룸이 이걸 번지게 한다
+  vec3 H = normalize(uSunDir + V);
+  float sp = max(dot(N,H), 0.0);
+  col += uSunCol * pow(sp, 110.0) * 4.0;
+  col += uSunCol * pow(sp, 14.0) * 0.14;
+
+  // 마루 하이라이트
+  col += vec3(0.13,0.17,0.21) * pow(max(vWave,0.0), 2.0);
 
   // banded ripples running with the tide
   float band = sin(r*1.5 - uTime*2.4 + noise(vWorld.xz*0.24)*5.0);
@@ -244,11 +271,14 @@ export function buildWater() {
       uFog: { value: new THREE.Color(0x9fd8e8) },
       uFogNear: { value: 46 },
       uFogFar: { value: 155 },
+      uSunDir: { value: new THREE.Vector3(0.5, 0.75, 0.38) },
+      uSunCol: { value: new THREE.Color(0xfff3d6) },
     },
   });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.renderOrder = 5;
   scene.add(mesh);
+  bindWater(mat.uniforms);
   return mesh;
 }
 

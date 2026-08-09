@@ -1,6 +1,6 @@
 import { loadAll } from './assets.js';
 import { Game } from './game.js';
-import { renderer, scene, camera } from './gfx.js';
+import { renderer, scene, camera, IS_TOUCH } from './gfx.js';
 import { initAudio, resumeAudio, prefetchMusic, sfx } from './audio.js';
 import { input, attachTouch } from './input.js';
 import * as ui from './ui.js';
@@ -36,7 +36,7 @@ async function boot() {
   ui.show('title');
   ui.showBest();
 
-  if (matchMedia('(pointer: coarse)').matches) attachTouch(document.getElementById('app'));
+  if (IS_TOUCH) attachTouch(document.getElementById('app'));
 
   const begin = () => {
     initAudio(); resumeAudio(); sfx.ui();

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { scene, shake, setZoom, updateCamera, camera, renderer } from './gfx.js';
+import { shake, setZoom, updateCamera, setLightPhase, updateLighting, composer } from './gfx.js';
 import { Player } from './player.js';
 import { Loot, spawnLoot, DeepOne, Shark, LivingWave } from './entities.js';
 import {
@@ -117,6 +117,7 @@ export class Game {
     this.waveOut = false;
     setZoom(1);
     setMusicPhase('ebb');
+    setLightPhase('ebb', 1.6);
     ui.shout(`조수 ${this.tideNo} 썰물`, '#8ef2c6');
     ui.hide('shop');
   }
@@ -125,6 +126,7 @@ export class Game {
     this.state = 'flood';
     this.t = 0;
     setMusicPhase('flood', 0.5);
+    setLightPhase('flood', 3.2);   // 해가 주저앉고 하늘이 식는 데 3초
     ui.shout('밀물이 온다!', '#ff7a5a');
     sfx.floodHorn();
     sfx.splash(true);
@@ -136,6 +138,7 @@ export class Game {
     this.state = 'settle';
     this.t = 0;
     setMusicPhase('village');
+    setLightPhase('village', 2.0);
     setZoom(0.94);
     this.player.celebrate();
   }
@@ -159,6 +162,7 @@ export class Game {
     this.state = 'over';
     input.enabled = false;
     setMusicPhase('village');
+    setLightPhase('village', 2.0);
     setMusicIntensity(0.05);
     ui.hide('shop');
     ui.renderOver(this, won);
@@ -239,7 +243,6 @@ export class Game {
     w.waterY = terrainHeight(w.tideR);
     this.water.material.uniforms.uTideR.value = w.tideR;
     this.water.material.uniforms.uWaterY.value = w.waterY;
-    this.water.material.uniforms.uTime.value += dt;
     this.water.position.y = w.waterY;
 
     const active = this.state === 'ebb' || this.state === 'flood' || this.state === 'settle';
@@ -354,11 +357,12 @@ export class Game {
     if (this.state !== 'title' && this.state !== 'over') this.step(dt);
     else {
       this.world.waterY = terrainHeight(this.world.tideR);
-      this.water.material.uniforms.uTime.value += dt;
       updateCamera(this.player.pos, dt, null);
       updateFx(dt);
       updateMusic(dt);
     }
-    renderer.render(scene, camera);
+    this.water.material.uniforms.uTime.value += dt;
+    updateLighting(dt);
+    composer.render();
   }
 }

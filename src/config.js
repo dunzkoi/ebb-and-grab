@@ -103,11 +103,44 @@ export const REPAIR_COST = [180, 360, 640, 1000, 1420];
 /** The ship's berth is only paid up this long. Finish the repair or lose it. */
 export const MAX_TIDES = 12;
 
-export const PALETTE = {
-  sky: 0x9fd8e8,
-  fogNear: 58,
-  fogFar: 185,
-  sunColor: 0xfff3d6,
-  ambTop: 0xbfe4f2,
-  ambBot: 0x6d8996,
+/**
+ * 조수 단계별 조명 프리셋. gfx.js가 이 사이를 몇 초에 걸쳐 넘긴다.
+ *
+ * 썰물은 한낮, 밀물은 해가 주저앉으며 식고, 정산은 노을.
+ * 시간 제한을 숫자로만 알려주는 게 아니라 빛으로도 알려준다.
+ * `dir`는 주인공 기준 태양 오프셋. y를 낮추면 그림자가 길어진다.
+ */
+export const GRADES = {
+  ebb: {
+    sky: 0x9fd8e8, fogNear: 58, fogFar: 185,
+    dir: [34, 52, 26], sun: 0xfff3d6, sunI: 2.45,
+    ambTop: 0xbfe4f2, ambBot: 0x6d8996, ambI: 1.02,
+    fill: 0xffd9a0, fillI: 0.32,
+    rim: 0xbfe8ff, rimI: 0.5,
+    lamp: 0xffd2a0, lampI: 0.5,
+    exposure: 0.98, bloom: 0.3,
+    shallow: 0x74d6cf, deep: 0x175c86, foam: 0xf2fbff,
+  },
+  flood: {
+    // 맑은 날이 아니라 하늘이 주저앉는 쪽. 태양이 약해지고 전체가 강철색으로 식는다.
+    // 따뜻한 건 플레이어 램프뿐이라 높은 데서 봐도 내가 어디 있는지 바로 보인다.
+    sky: 0x4d6f8c, fogNear: 40, fogFar: 142,
+    dir: [40, 30, 26], sun: 0xffd9b0, sunI: 1.35,
+    ambTop: 0x8fb4cc, ambBot: 0x33495a, ambI: 1.05,
+    fill: 0x7fa8cc, fillI: 0.3,
+    rim: 0xbfe8ff, rimI: 1.0,
+    lamp: 0xffb27a, lampI: 2.4,
+    exposure: 0.94, bloom: 0.6,
+    shallow: 0x3f92a8, deep: 0x0b3352, foam: 0xdff2ff,
+  },
+  village: {
+    sky: 0xefc08c, fogNear: 50, fogFar: 168,
+    dir: [40, 24, 34], sun: 0xffd39a, sunI: 2.05,
+    ambTop: 0xffd9b0, ambBot: 0x6b6486, ambI: 1.05,
+    fill: 0xffb86b, fillI: 0.5,
+    rim: 0xffd9a8, rimI: 0.72,
+    lamp: 0xffc27a, lampI: 1.2,
+    exposure: 1.02, bloom: 0.48,
+    shallow: 0x6fbfc4, deep: 0x1c4d72, foam: 0xfff2e2,
+  },
 };

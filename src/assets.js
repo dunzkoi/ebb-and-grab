@@ -44,12 +44,20 @@ export const clips = {};
 /** Voxel props are authored at ~15 units per tile; normalise them here. */
 const PROP_SCALE = 1 / 15;
 
+/**
+ * 금붙이는 자기 색으로 연하게 발광시킨다. 블룸 문턱이 여기서 물어서
+ * 멀리서도 "저기 비싼 게 있다"가 읽힌다. 너무 올리면 복셀 면이 평평해진다.
+ */
+const GLOW = { coin: 0.34, goldbag: 0.26, mysterybag: 0.3 };
+
 function prep(gltf, key) {
   const root = gltf.scene;
   root.traverse(o => {
     if (!o.isMesh) return;
     o.castShadow = true;
-    o.receiveShadow = false;
+    // 받기도 해야 건물 처마와 난파선 갑판이 서로에게 그림자를 드리고,
+    // 복셀 덩어리가 통째로 균일하게 타는 대신 입체로 읽힌다
+    o.receiveShadow = true;
     o.frustumCulled = true;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     for (const m of mats) {
@@ -67,6 +75,7 @@ function prep(gltf, key) {
       // bare voxel rock reads as dropped paper on tan sand, damp it down
       if (key.startsWith('boulder')) m.color.setHex(0x8d8a72);
       if (m.emissive && m.emissiveMap) m.emissiveIntensity = 0.35;
+      else if (m.emissive && GLOW[key]) { m.emissive.copy(m.color); m.emissiveIntensity = GLOW[key]; }
     }
   });
   models[key] = root;
