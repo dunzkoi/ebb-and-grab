@@ -27,6 +27,16 @@ const stats = window.__stats();           // 씬·메모리 통계
 ffmpeg -i before.png -i after.png -lavfi psnr -f null -
 ```
 
+## capture-dyn.js
+
+플레이어를 고정 위치·고정 포즈로 세워서 찍습니다. `capture.js`는 배경만 보므로
+캐릭터 렌더링이 바뀌었을 때 못 잡습니다. 캐릭터를 건드리면 이쪽도 같이 돌리세요.
+
+```js
+const src = await (await fetch('/tools/capture-dyn.js')).text(); (0, eval)(src);
+const shots = await window.__captureDyn();
+```
+
 ## coiserve.py
 
 `performance.measureUserAgentSpecificMemory()`를 쓰려면 crossOriginIsolated
