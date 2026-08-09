@@ -14,9 +14,14 @@ import sys
 import urllib.request
 
 FONTS = {
-    # 파일명: (구글 폰트 family, 굵기)
-    "BlackHanSans": "Black+Han+Sans",
-    "Jua": "Jua",
+    # 파일명: 구글 폰트 family 쿼리
+    #
+    # 한 패밀리의 굵기 세 단계로 전부 처리한다.
+    # 처음에는 제목에 Black Han Sans를 썼는데, 획이 너무 굵어서 '썰'·'물'·'음'
+    # 같은 글자의 속공간이 막혀 네모로 뭉갰다. 하필 제목이 「썰물의 도둑」이다.
+    "GothicA1-700": "Gothic+A1:wght@700",
+    "GothicA1-800": "Gothic+A1:wght@800",
+    "GothicA1-900": "Gothic+A1:wght@900",
 }
 
 # 소스에서 글자를 긁어올 파일들
