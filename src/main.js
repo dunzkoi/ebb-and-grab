@@ -1,5 +1,6 @@
 import { loadAll } from './assets.js';
 import { Game } from './game.js';
+import { renderer, scene, camera } from './gfx.js';
 import { initAudio, resumeAudio, prefetchMusic, sfx } from './audio.js';
 import { input, attachTouch } from './input.js';
 import * as ui from './ui.js';
@@ -25,6 +26,11 @@ async function boot() {
 
   const game = new Game();
   window.__game = game;   // handy for debugging / automated playtests
+
+  // 셰이더 컴파일과 텍스처 업로드를 로딩 화면에서 끝낸다.
+  // 안 하면 첫 렌더에서 100ms 넘게 프레임이 멈춘다.
+  loadTxt.textContent = '셰이더를 굽는 중…';
+  await renderer.compileAsync(scene, camera);
 
   ui.hide('loading');
   ui.show('title');
