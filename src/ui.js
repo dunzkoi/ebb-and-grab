@@ -59,12 +59,13 @@ export function setVignette(v) { el.vignette.style.opacity = v; }
 
 /* ---------------------------------- minimap ---------------------------------------- */
 
-const MAP_R = R_MAX + 10;
+const MAP_R = R_MAX + 5;   // 걸어 다니는 범위(46)와 만조선(50)까지만 담는다
 const TIER = { coin: '#ffe08a', crate: '#c79a6b', barrel: '#b7793f', gold: '#ffcc4d', chest: '#7fe3ff', relic: '#ff8ae0' };
 
 export function drawMap(g, p, loot, mobs, world, lens) {
   const c = mapCtx, S = el.map.width, R = S / 2;
   const k = R / MAP_R;
+  const u = S / 300;   // 기준 300px 대비 배율. 점·선 두께를 위젯 크기에 맞춘다
   c.clearRect(0, 0, S, S);
 
   c.save();
@@ -81,34 +82,38 @@ export function drawMap(g, p, loot, mobs, world, lens) {
 
   // waterline
   c.beginPath(); c.arc(R, R, world.tideR * k, 0, 7);
-  c.strokeStyle = '#eafaff'; c.lineWidth = 3; c.stroke();
+  c.strokeStyle = '#eafaff'; c.lineWidth = 3 * u; c.stroke();
 
   for (const l of loot) {
     if (l.dead) continue;
     const x = R + l.obj.position.x * k, y = R + l.obj.position.z * k;
     const big = l.type === 'relic' || l.type === 'chest';
-    if (!lens && !big && l.type !== 'gold') { c.fillStyle = 'rgba(255,255,255,.5)'; }
+    if (!lens && !big && l.type !== 'gold') { c.fillStyle = 'rgba(255,255,255,.72)'; }
     else c.fillStyle = TIER[l.type];
-    c.beginPath(); c.arc(x, y, big ? 4.2 : 2.4, 0, 7); c.fill();
+    c.beginPath(); c.arc(x, y, (big ? 4.8 : 2.9) * u, 0, 7); c.fill();
   }
 
   for (const m of mobs) {
     const x = R + m.obj.position.x * k, y = R + m.obj.position.z * k;
     c.fillStyle = m.awake === false ? 'rgba(255,90,80,.45)' : '#ff5a4d';
-    c.beginPath(); c.arc(x, y, 4.6, 0, 7); c.fill();
+    c.beginPath(); c.arc(x, y, 5.2 * u, 0, 7); c.fill();
   }
 
   // player
   const px = R + p.pos.x * k, py = R + p.pos.z * k;
   c.save();
   c.translate(px, py); c.rotate(-p.face);
-  c.fillStyle = '#fff';
-  c.beginPath(); c.moveTo(0, -8); c.lineTo(5.5, 6); c.lineTo(0, 3); c.lineTo(-5.5, 6); c.closePath(); c.fill();
+  c.scale(u, u);
+  // 내 위치가 전리품 점들에 묻히지 않도록 어두운 테두리를 두른다
+  c.beginPath(); c.moveTo(0, -10); c.lineTo(6.8, 7.2); c.lineTo(0, 3.6); c.lineTo(-6.8, 7.2); c.closePath();
+  c.fillStyle = '#17222b'; c.fill();
+  c.beginPath(); c.moveTo(0, -7.2); c.lineTo(4.9, 5.4); c.lineTo(0, 2.6); c.lineTo(-4.9, 5.4); c.closePath();
+  c.fillStyle = '#fff'; c.fill();
   c.restore();
   c.restore();
 
-  c.beginPath(); c.arc(R, R, R - 1.5, 0, 7);
-  c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 2; c.stroke();
+  c.beginPath(); c.arc(R, R, R - 1.5 * u, 0, 7);
+  c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 2 * u; c.stroke();
 }
 
 /* ------------------------------------ shop ----------------------------------------- */
