@@ -14,6 +14,33 @@ export const el = {
 
 const mapCtx = el.map.getContext('2d');
 
+const BEST_KEY = 'eg_best';
+let bestMemory = 0;
+let bestLoaded = false;
+
+function readBest() {
+  if (!bestLoaded) {
+    bestLoaded = true;
+    try {
+      const stored = Number(localStorage.getItem(BEST_KEY) || 0);
+      if (Number.isFinite(stored) && stored > bestMemory) bestMemory = stored;
+    } catch {
+      // 저장소가 차단된 브라우저에서도 메모리 기록으로 계속 진행한다.
+    }
+  }
+  return bestMemory;
+}
+
+function writeBest(score) {
+  if (score <= bestMemory) return;
+  bestMemory = score;
+  try {
+    localStorage.setItem(BEST_KEY, String(score));
+  } catch {
+    // 저장소에 쓸 수 없어도 이번 실행의 최고 기록은 메모리에 남긴다.
+  }
+}
+
 /* --------------------------------- screens ----------------------------------------- */
 
 export function show(id) { $(id).classList.remove('hidden'); }
@@ -177,9 +204,9 @@ export function renderOver(g, won) {
   $('overText').innerHTML = won
     ? `배는 고쳐졌고 창고는 가득 찼다. <b>조수 ${g.tideNo}번</b> 만에 해냈다.`
     : `조수 ${MAX_TIDES}번이 모두 지나갔다. 수리는 <b>${g.repair}/${REPAIR_COST.length}단계</b>에서 멈췄다.`;
-  const best = Number(localStorage.getItem('eg_best') || 0);
+  const best = readBest();
   const score = g.totalEarned + (won ? 2000 + (MAX_TIDES - g.tideNo) * 220 : 0);
-  if (score > best) localStorage.setItem('eg_best', String(score));
+  writeBest(score);
   $('overTally').innerHTML = [
     ['버틴 조수', Math.min(g.tideNo, MAX_TIDES)],
     ['총 회수 금액', g.totalEarned],
@@ -190,6 +217,6 @@ export function renderOver(g, won) {
 }
 
 export function showBest() {
-  const best = Number(localStorage.getItem('eg_best') || 0);
+  const best = readBest();
   $('bestTxt').textContent = best ? `최고 기록 ${best.toLocaleString()}점` : '';
 }

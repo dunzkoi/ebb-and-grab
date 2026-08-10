@@ -1,5 +1,6 @@
 const down = new Set();
 const pressed = new Set();
+const resetHandlers = new Set();
 
 const MOVE = {
   KeyW: [0, -1], ArrowUp: [0, -1],
@@ -27,7 +28,24 @@ addEventListener('keyup', e => {
   if (e.code === 'Space' && down.has('Space')) input.throwReleased = true;
   down.delete(e.code);
 });
-addEventListener('blur', () => down.clear());
+
+export function onInputReset(fn) {
+  resetHandlers.add(fn);
+}
+
+function resetInputState() {
+  down.clear();
+  pressed.clear();
+  input.x = input.z = 0;
+  input.throwHeld = false;
+  input.throwReleased = false;
+  input.dash = false;
+  touchVec.x = touchVec.z = 0;
+  for (const reset of resetHandlers) reset();
+}
+
+addEventListener('blur', resetInputState);
+document.addEventListener('visibilitychange', resetInputState);
 
 /** Call once per frame, before gameplay. */
 export function pollInput() {
@@ -61,6 +79,16 @@ export function attachTouch(el) {
   const stick = document.getElementById('stick');
   const nub = stick.firstElementChild;
   let id = null, ox = 0, oy = 0;
+
+  const resetStick = () => {
+    id = null;
+    touchVec.x = touchVec.z = 0;
+    stick.style.display = 'none';
+    nub.style.transform = '';
+    document.getElementById('tThrow').classList.remove('hit');
+    document.getElementById('tDash').classList.remove('hit');
+  };
+  onInputReset(resetStick);
 
   const hold = (node, on, off) => {
     node.addEventListener('pointerdown', e => {

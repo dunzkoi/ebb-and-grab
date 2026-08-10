@@ -6,6 +6,7 @@ import { PLAYER, R_VILLAGE, R_MAX, LOOT, loadPenalty } from './config.js';
 import { burst, ripple, popup } from './fx.js';
 import { sfx } from './audio.js';
 import { addOutline } from './outline.js';
+import { onInputReset } from './input.js';
 
 // 프레임마다 새로 만들지 않기 위한 재사용 벡터
 const _wish = new THREE.Vector3();
@@ -66,6 +67,7 @@ export class Player {
     this.throwAnimT = 0;
     this.splashT = 0;
     this.alive = true;
+    onInputReset(() => this.resetThrowCharge());
   }
 
   get weight() { return this.carry.reduce((s, c) => s + LOOT[c.type].w, 0); }
@@ -245,9 +247,14 @@ export class Player {
 
   /* ---------------------------------- throwing ------------------------------------ */
 
+  resetThrowCharge() {
+    this.charge = 0;
+    this.charging = false;
+  }
+
   updateCharge(dt, input) {
     if (this.carry.length === 0 || this.stun > 0) {
-      this.charging = false; this.charge = 0;
+      this.resetThrowCharge();
       return null;
     }
     if (input.throwHeld) {
@@ -256,9 +263,8 @@ export class Player {
       return null;
     }
     if (this.charging) {
-      this.charging = false;
       const power = this.charge;
-      this.charge = 0;
+      this.resetThrowCharge();
       return this.doThrow(power);
     }
     return null;
@@ -315,6 +321,7 @@ export class Player {
     this.dropAll();
     this.pos.set(0, 0, 7);
     this.vel.set(0, 0, 0);
-    this.submerge = 0; this.stun = 0; this.charge = 0;
+    this.submerge = 0; this.stun = 0;
+    this.resetThrowCharge();
   }
 }

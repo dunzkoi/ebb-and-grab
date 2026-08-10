@@ -194,8 +194,13 @@ export class DeepOne extends Mob {
     const p = this.obj.position;
     const dx = player.pos.x - p.x, dz = player.pos.z - p.z;
     const d = Math.hypot(dx, dz);
+    const inVillage = Math.hypot(player.pos.x, player.pos.z) < R_VILLAGE;
 
-    if (!this.awake && d < this.aggro) {
+    if (inVillage) {
+      this.awake = false;
+      this.wakeT = 0;
+      this.cooldown = 0;
+    } else if (!this.awake && d < this.aggro) {
       this.awake = true; this.wakeT = 0.55;
       this.play(MOB_A.attack, 0.1);
       popup('!', p.x, p.y + 3.4, p.z, '#8ef2c6', 0.8);
@@ -224,7 +229,7 @@ export class DeepOne extends Mob {
     this.mixer.update(dt);
 
     this.cooldown -= dt;
-    if (d < 1.9 && this.cooldown <= 0 && this.awake) {
+    if (!inVillage && d < 1.9 && this.cooldown <= 0 && this.awake) {
       this.cooldown = 1.4;
       return new THREE.Vector3(-dx / d, 0, -dz / d);
     }
