@@ -102,7 +102,9 @@ export function drawMap(g, p, loot, mobs, world, lens) {
   // player
   const px = R + p.pos.x * k, py = R + p.pos.z * k;
   c.save();
-  c.translate(px, py); c.rotate(-p.face);
+  // face=0은 정면이 +Z(atan2(vel.x, vel.z))인데 이 화사표는 위(-y)를 보게 그려진다.
+  // -face를 그대로 걸면 정확하게 반대를 가리킨다. 반 바퀴 돌려 축을 맞춘다.
+  c.translate(px, py); c.rotate(Math.PI - p.face);
   c.scale(u, u);
   // 내 위치가 전리품 점들에 묻히지 않도록 어두운 테두리를 두른다
   c.beginPath(); c.moveTo(0, -10); c.lineTo(6.8, 7.2); c.lineTo(0, 3.6); c.lineTo(-6.8, 7.2); c.closePath();
